@@ -74,7 +74,7 @@ export default function LandingPage() {
         >
           <div className="absolute -inset-4 bg-dirty-gold/10 blur-xl rounded-full" />
           <span className="relative text-xs sm:text-sm tracking-[0.3em] uppercase text-dirty-gold/80 font-bold border border-dirty-gold/20 px-4 py-1.5 rounded-full glass">
-            TÜRKİYE'NİN İLK ANTI-DATING PLATFORMU
+            Türkiye’nin samimi gençlik platformu
           </span>
         </motion.div>
 

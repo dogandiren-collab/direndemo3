@@ -5,331 +5,357 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { vibes } from '@/data/questions';
 import { saveUser } from '@/utils/storage';
-import { ArrowRight, Sparkles, Flame, Zap } from 'lucide-react';
+import { ArrowRight, Sparkles, Flame, Gift, Trophy, Check, X, User } from 'lucide-react';
 import RainEffect from '@/components/RainEffect';
 
-type Step = 'splash' | 'intro' | 'login' | 'vibe';
+type Step = 'mystery-box' | 'swipe-quiz' | 'mission-streak' | 'character-name' | 'vibe-select';
 
-const splashWords = ['Mükemmellik', 'Sahtelik', 'Ego', 'Flexleme'];
-const introLines = [
-  { text: 'Bazıları zengin.', delay: 0.5 },
-  { text: 'Bazıları güzel.', delay: 1.5 },
-  { text: 'Bazıları popüler.', delay: 2.5 },
-  { text: '', delay: 3.5 },
-  { text: 'Sen?', delay: 4.0 },
+const QUIZ_QUESTIONS = [
+  {
+    id: 1,
+    emoji: '☕',
+    text: 'Sabah uyanınca ilk iş telefona bakıp hayata lanet eder misin?',
+    yesBtn: '🫠 Kesinlikle',
+    noBtn: '🛑 Asla',
+  },
+  {
+    id: 2,
+    emoji: '💸',
+    text: 'Cüzdanındaki parayı hesaplarken matematik profesörüne dönüşür müsün?',
+    yesBtn: '📊 Tabi ki',
+    noBtn: '💰 Zenginim ben',
+  },
+  {
+    id: 3,
+    emoji: '🎧',
+    text: 'Gece 3\'te durduk yere geçmiş hatalarına dertlenir misin?',
+    yesBtn: '🚬 Her gece',
+    noBtn: '😴 Mışıl mışıl uyurum',
+  },
 ];
 
 export default function OnboardingPage() {
-  const [step, setStep] = useState<Step>('splash');
+  const [step, setStep] = useState<Step>('mystery-box');
+  const [boxOpened, setBoxOpened] = useState(false);
+  const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
+  const [quizDirection, setQuizDirection] = useState<number>(0); // 1 for right, -1 for left
   const [name, setName] = useState('');
   const [selectedVibe, setSelectedVibe] = useState<string | null>(null);
-  const [currentSplashWord, setCurrentSplashWord] = useState(0);
   const router = useRouter();
 
-  // Splash word cycling
-  useEffect(() => {
-    if (step !== 'splash') return;
-    const interval = setInterval(() => {
-      setCurrentSplashWord(prev => {
-        if (prev >= splashWords.length - 1) {
-          clearInterval(interval);
-          setTimeout(() => setStep('intro'), 600);
-          return prev;
-        }
-        return prev + 1;
-      });
-    }, 700);
-    return () => clearInterval(interval);
-  }, [step]);
+  // Mystery Box Handler
+  const handleOpenBox = () => {
+    setBoxOpened(true);
+    setTimeout(() => {
+      setStep('swipe-quiz');
+    }, 3000);
+  };
 
-  // Auto-advance from intro to login
-  useEffect(() => {
-    if (step !== 'intro') return;
-    const timer = setTimeout(() => setStep('login'), 6500);
-    return () => clearTimeout(timer);
-  }, [step]);
+  // Swipe Quiz Handler
+  const handleAnswer = (isYes: boolean) => {
+    setQuizDirection(isYes ? 1 : -1);
+    setTimeout(() => {
+      if (currentQuizIndex < QUIZ_QUESTIONS.length - 1) {
+        setCurrentQuizIndex(prev => prev + 1);
+        setQuizDirection(0);
+      } else {
+        setStep('mission-streak');
+      }
+    }, 400);
+  };
 
+  // Login / Name Handler
   const handleLogin = () => {
     if (name.trim().length < 2) return;
     saveUser({ name: name.trim() });
-    setStep('vibe');
+    setStep('vibe-select');
   };
 
+  // Vibe Selection Handler
   const handleVibeSelect = (vibeId: string) => {
     setSelectedVibe(vibeId);
     setTimeout(() => {
       saveUser({ vibe: vibeId, completedOnboarding: true });
       router.push('/test');
-    }, 600);
+    }, 800);
   };
 
   return (
-    <main className="relative min-h-[100dvh] bg-bg-dark overflow-hidden">
+    <main className="relative min-h-[100dvh] bg-bg-dark overflow-hidden select-none">
       <RainEffect />
 
-      {/* Ambient orbs */}
+      {/* Ambient Orbs */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-1/3 left-1/3 w-48 h-48 md:w-80 md:h-80 bg-dirty-gold/5 rounded-full blur-[60px] md:blur-[100px] animate-pulse-glow" />
-        <div className="absolute bottom-1/4 right-1/3 w-40 h-40 md:w-64 md:h-64 bg-muted-blue/5 rounded-full blur-[50px] md:blur-[80px] animate-pulse-glow" style={{ animationDelay: '2s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 w-64 h-64 bg-warm-neon-red/3 rounded-full blur-[100px] animate-pulse-glow" style={{ animationDelay: '3s' }} />
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-dirty-gold/10 rounded-full blur-[100px] animate-pulse-glow" />
+        <div className="absolute bottom-1/3 right-1/4 w-80 h-80 bg-warm-neon-red/5 rounded-full blur-[120px] animate-pulse-glow" style={{ animationDelay: '1.5s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 w-96 h-96 bg-muted-blue/5 rounded-full blur-[150px] animate-pulse-glow" style={{ animationDelay: '3s' }} />
       </div>
 
+      {/* Top Gamified Header Status */}
+      <header className="absolute top-0 left-0 right-0 p-6 z-20 flex items-center justify-between pointer-events-none">
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-full glass">
+          <Flame className="text-faded-orange animate-bounce" size={18} />
+          <span className="text-xs font-bold text-text-primary">Seri: <span className="text-dirty-gold">1. Gün</span></span>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-full glass">
+          <Sparkles className="text-dirty-gold animate-spin" style={{ animationDuration: '4s' }} size={18} />
+          <span className="text-xs font-bold text-text-primary">Çay Puanı: <span className="text-dirty-gold">{boxOpened ? '+500' : '0'}</span></span>
+        </motion.div>
+      </header>
+
       <AnimatePresence mode="wait">
-        {/* ===== SPLASH SCREEN ===== */}
-        {step === 'splash' && (
+        {/* ===== STEP 1: MYSTERY BOX (TEMU VIBE) ===== */}
+        {step === 'mystery-box' && (
           <motion.div
-            key="splash"
-            exit={{ opacity: 0, scale: 1.1 }}
-            transition={{ duration: 0.8 }}
-            className="relative z-10 flex flex-col items-center justify-center min-h-[100dvh] px-4"
+            key="mystery-box"
+            exit={{ opacity: 0, scale: 1.2 }}
+            transition={{ duration: 0.6 }}
+            className="relative z-10 flex flex-col items-center justify-center min-h-[100dvh] px-4 sm:px-6 text-center"
           >
-            {/* Pulsing background ring */}
             <motion.div
-              animate={{ scale: [1, 1.5, 1], opacity: [0.1, 0.05, 0.1] }}
-              transition={{ duration: 3, repeat: Infinity }}
-              className="absolute w-[500px] h-[500px] rounded-full border border-dirty-gold/20"
-            />
-
-            <div className="text-center">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-xs tracking-[0.5em] uppercase text-dirty-gold/40 mb-8 font-bold"
-              >
-                Bunlardan bıktıysan
-              </motion.div>
-
-              <div className="h-20 flex items-center justify-center overflow-hidden">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={currentSplashWord}
-                    initial={{ opacity: 0, y: 40, rotateX: -90 }}
-                    animate={{ opacity: 1, y: 0, rotateX: 0 }}
-                    exit={{ opacity: 0, y: -40, rotateX: 90 }}
-                    transition={{ duration: 0.4, ease: 'easeOut' }}
-                    className="text-4xl sm:text-6xl font-[var(--font-heading)] font-bold"
-                  >
-                    <span className="text-warm-neon-red line-through decoration-2 opacity-80">
-                      {splashWords[currentSplashWord]}
-                    </span>
-                  </motion.div>
-                </AnimatePresence>
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5, type: 'spring', stiffness: 200 }}
+              className="mb-8"
+            >
+              <div className="text-xs tracking-[0.4em] uppercase text-dirty-gold font-bold mb-3 bg-dirty-gold/10 border border-dirty-gold/20 px-4 py-1.5 rounded-full inline-block animate-pulse">
+                🎁 GÜNLÜK GARİBAN ŞANSIN!
               </div>
+              <h1 className="text-4xl sm:text-6xl font-[var(--font-heading)] font-bold text-text-primary mb-2">
+                Gizemli <span className="text-gradient-gold">Kutuyu Aç</span>
+              </h1>
+              <p className="text-text-secondary text-sm">Başlangıç auranı ve sürpriz çay puanını keşfetmek için dokun!</p>
+            </motion.div>
 
+            {/* Interactive Box */}
+            <div className="relative w-72 h-72 sm:w-80 sm:h-80 flex items-center justify-center my-6">
+              {/* Pulsing Aura */}
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.5 }}
-                className="mt-8 text-text-muted text-sm"
+                animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.5, 0.2] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="absolute inset-0 rounded-full bg-gradient-to-r from-dirty-gold via-faded-orange to-warm-neon-red blur-2xl opacity-40"
+              />
+
+              {!boxOpened ? (
+                <motion.button
+                  whileHover={{ scale: 1.08, rotate: [0, -5, 5, -5, 0] }}
+                  whileTap={{ scale: 0.92 }}
+                  onClick={handleOpenBox}
+                  className="relative z-10 w-48 h-48 sm:w-56 sm:h-56 bg-gradient-to-tr from-dirty-gold via-ironic-gold to-faded-orange rounded-3xl flex flex-col items-center justify-center shadow-[0_0_50px_rgba(196,163,90,0.4)] border-4 border-white/20 group cursor-pointer focus:outline-none"
+                >
+                  <Gift size={80} className="text-bg-dark mb-2 group-hover:scale-110 transition-transform animate-bounce" />
+                  <span className="text-bg-dark font-[var(--font-heading)] font-extrabold text-xl tracking-wider uppercase">Dokun & Aç</span>
+                </motion.button>
+              ) : (
+                <motion.div
+                  initial={{ scale: 0.5, rotate: -180, opacity: 0 }}
+                  animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                  transition={{ type: 'spring', stiffness: 200 }}
+                  className="relative z-10 w-full glass-strong border-2 border-dirty-gold p-8 rounded-3xl flex flex-col items-center shadow-[0_0_80px_rgba(196,163,90,0.6)] glow-gold"
+                >
+                  <div className="text-7xl mb-4 animate-bounce">✨☕</div>
+                  <div className="text-2xl font-bold font-[var(--font-heading)] text-gradient-gold mb-1">DESTANSI ÖDÜL!</div>
+                  <div className="text-4xl font-extrabold text-white mb-3">+500 Çay Puanı</div>
+                  <div className="text-xs text-dirty-gold bg-dirty-gold/10 border border-dirty-gold/20 px-4 py-2 rounded-full font-mono">
+                    %100 Doğal Melankoli Aurası Eklendi
+                  </div>
+                </motion.div>
+              )}
+            </div>
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1 }}
+              className="text-text-muted text-xs mt-6"
+            >
+              ⚡ TikTok ve Temu algoritmaları kadar bağımlılık yapıcıdır.
+            </motion.p>
+          </motion.div>
+        )}
+
+        {/* ===== STEP 2: SWIPE QUIZ (TIKTOK / TINDER VIBE) ===== */}
+        {step === 'swipe-quiz' && (
+          <motion.div
+            key="swipe-quiz"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            transition={{ duration: 0.5 }}
+            className="relative z-10 flex flex-col items-center justify-center min-h-[100dvh] px-4 sm:px-6 overflow-hidden"
+          >
+            <div className="w-full max-w-md text-center mb-6">
+              <div className="text-xs font-mono text-dirty-gold/60 mb-2 uppercase tracking-widest">MİNİ GÖREV: ALGORİTMAYI EĞİT</div>
+              <div className="flex justify-center gap-1.5 mb-6">
+                {QUIZ_QUESTIONS.map((q, i) => (
+                  <div key={q.id} className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${i <= currentQuizIndex ? 'bg-dirty-gold shadow-[0_0_10px_rgba(196,163,90,0.5)]' : 'bg-white/10'}`} />
+                ))}
+              </div>
+            </div>
+
+            {/* Quiz Card */}
+            <div className="relative w-full max-w-sm h-96 flex items-center justify-center my-4">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentQuizIndex}
+                  initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0, x: 0, rotate: 0 }}
+                  exit={{ opacity: 0, x: quizDirection * 200, rotate: quizDirection * 15, scale: 0.9 }}
+                  transition={{ duration: 0.3 }}
+                  className="absolute inset-0 glass-card border-2 border-dirty-gold/30 rounded-3xl p-8 flex flex-col items-center justify-center text-center shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden group"
+                >
+                  <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-dirty-gold via-faded-orange to-warm-neon-red" />
+                  <div className="text-7xl mb-6 group-hover:scale-110 transition-transform duration-300">{QUIZ_QUESTIONS[currentQuizIndex].emoji}</div>
+                  <h2 className="text-xl sm:text-2xl font-[var(--font-heading)] font-bold text-text-primary leading-relaxed mb-6">
+                    {QUIZ_QUESTIONS[currentQuizIndex].text}
+                  </h2>
+                  <div className="text-xs text-text-muted italic">Kaderini belirlemek için butonlara dokun</div>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+            {/* Swipe Buttons */}
+            <div className="w-full max-w-sm flex items-center justify-between gap-4 mt-8 z-10">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleAnswer(false)}
+                className="flex-1 py-5 glass border border-warm-neon-red/30 rounded-2xl flex items-center justify-center gap-2 text-warm-neon-red font-bold text-sm sm:text-base shadow-[0_0_30px_rgba(255,75,75,0.15)] hover:bg-warm-neon-red/10 transition-all"
               >
-                doğru yerdesin.
-              </motion.div>
+                <X size={20} /> {QUIZ_QUESTIONS[currentQuizIndex].noBtn}
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleAnswer(true)}
+                className="flex-1 py-5 bg-gradient-to-r from-dirty-gold to-faded-orange rounded-2xl flex items-center justify-center gap-2 text-bg-dark font-bold text-sm sm:text-base shadow-[0_0_30px_rgba(196,163,90,0.3)] glow-gold transition-all"
+              >
+                <Check size={20} /> {QUIZ_QUESTIONS[currentQuizIndex].yesBtn}
+              </motion.button>
             </div>
           </motion.div>
         )}
 
-        {/* ===== INTRO CINEMATIC ===== */}
-        {step === 'intro' && (
+        {/* ===== STEP 3: MISSION STREAK (DUOLINGO VIBE) ===== */}
+        {step === 'mission-streak' && (
           <motion.div
-            key="intro"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.8 }}
-            className="relative z-10 flex flex-col items-center justify-center min-h-[100dvh] px-4"
+            key="mission-streak"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, y: -100 }}
+            transition={{ duration: 0.6, type: 'spring', stiffness: 150 }}
+            className="relative z-10 flex flex-col items-center justify-center min-h-[100dvh] px-4 sm:px-6 text-center"
           >
-            <div className="text-center max-w-4xl space-y-6">
-              {introLines.map((line, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: line.delay, duration: 0.6 }}
-                  className={`${
-                    i === 4
-                      ? 'text-4xl sm:text-5xl font-[var(--font-heading)] font-bold text-gradient-gold mt-8'
-                      : 'text-xl sm:text-2xl text-text-secondary font-[var(--font-heading)]'
-                  }`}
-                >
-                  {line.text}
-                </motion.div>
-              ))}
+            {/* Pulsing Sunburst */}
+            <div className="absolute w-96 h-96 bg-dirty-gold/20 rounded-full blur-3xl animate-pulse" />
 
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 5.0, type: 'spring', stiffness: 200 }}
-                className="w-full"
-              >
-                <div className="inline-block text-5xl sm:text-8xl font-[var(--font-heading)] font-bold text-gradient-gold mt-4 text-glow-gold px-4 leading-tight">
-                  Garibansın.
-                </div>
-              </motion.div>
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1, rotate: [0, -10, 10, -10, 0] }}
+              transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+              className="w-32 h-32 rounded-full bg-gradient-to-tr from-dirty-gold via-ironic-gold to-faded-orange flex items-center justify-center text-bg-dark shadow-[0_0_80px_rgba(196,163,90,0.6)] mb-8 border-4 border-white/20 glow-gold animate-bounce"
+            >
+              <Trophy size={64} />
+            </motion.div>
 
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 5.8 }}
-                className="text-text-muted text-sm mt-6 italic"
-              >
-                Ve bu bir güç.
-              </motion.p>
+            <div className="text-xs font-mono text-dirty-gold tracking-[0.4em] uppercase mb-2">🔥 MİNİ GÖREV TAMAMLANDI!</div>
+            <h1 className="text-4xl sm:text-5xl font-[var(--font-heading)] font-extrabold text-white mb-4">
+              Gizli Başarı <span className="text-gradient-gold">Kilidi Açıldı!</span>
+            </h1>
+
+            <div className="glass-strong border border-dirty-gold/30 p-6 rounded-2xl max-w-sm w-full mb-8 shadow-[0_0_40px_rgba(0,0,0,0.5)]">
+              <div className="text-xl font-bold text-dirty-gold mb-1">&ldquo;Mahallenin En Dertlisi&rdquo;</div>
+              <p className="text-xs text-text-secondary leading-relaxed mb-4">
+                Algoritmamız senin %100 saf ve samimi bir gariban olduğunu doğruladı. İlk gün serin (streak) resmen başladı!
+              </p>
+              <div className="flex items-center justify-center gap-2 bg-dirty-gold/10 py-2 rounded-xl border border-dirty-gold/20 text-dirty-gold font-mono text-xs font-bold">
+                <Flame size={16} className="text-faded-orange animate-pulse" /> +1 GÜN SERİ (STREAK) AKTİF
+              </div>
             </div>
 
-            {/* Skip button */}
             <motion.button
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 2 }}
-              onClick={() => setStep('login')}
-              className="absolute bottom-12 text-text-muted/40 text-xs hover:text-text-muted transition-colors"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setStep('character-name')}
+              className="px-12 py-5 bg-gradient-to-r from-dirty-gold via-ironic-gold to-faded-orange rounded-2xl text-bg-dark font-bold text-lg shadow-[0_0_40px_rgba(196,163,90,0.4)] glow-gold flex items-center gap-2"
             >
-              atla →
+              Karakterini İsimlendir <ArrowRight size={20} />
             </motion.button>
           </motion.div>
         )}
 
-        {/* ===== LOGIN SCREEN ===== */}
-        {step === 'login' && (
+        {/* ===== STEP 4: CHARACTER NAME (GAMIFIED INPUT) ===== */}
+        {step === 'character-name' && (
           <motion.div
-            key="login"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            key="character-name"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -100 }}
             transition={{ duration: 0.5 }}
-            className="relative z-10 flex flex-col items-center justify-center min-h-[100dvh] px-4 sm:px-6"
+            className="relative z-10 flex flex-col items-center justify-center min-h-[100dvh] px-4 sm:px-6 text-center"
           >
-            {/* Floating background elements */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-15">
-              <motion.div animate={{ y: [0, -30, 0], rotate: [0, 15, 0] }} transition={{ duration: 6, repeat: Infinity }} className="absolute top-1/4 left-[15%] text-5xl">🍵</motion.div>
-              <motion.div animate={{ y: [0, 20, 0], rotate: [0, -10, 0] }} transition={{ duration: 7, repeat: Infinity, delay: 1 }} className="absolute top-1/3 right-[10%] text-5xl">💔</motion.div>
-              <motion.div animate={{ y: [0, -25, 0] }} transition={{ duration: 5, repeat: Infinity, delay: 2 }} className="absolute bottom-1/3 left-[10%] text-5xl">🫠</motion.div>
-              <motion.div animate={{ y: [0, 15, 0] }} transition={{ duration: 8, repeat: Infinity, delay: 0.5 }} className="absolute bottom-1/4 right-[20%] text-5xl">🚬</motion.div>
-            </div>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
+              <div className="text-6xl mb-6 animate-bounce">🎬</div>
+              <h1 className="text-3xl sm:text-4xl font-[var(--font-heading)] font-bold text-text-primary mb-3">
+                Gariban <span className="text-gradient-gold">Savaşçı Adın</span>
+              </h1>
+              <p className="text-text-secondary text-sm mb-8">Bu destansı hikayede mahalle seni hangi isimle tanıyacak?</p>
 
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, type: 'spring', stiffness: 100 }}
-              className="w-full max-w-sm"
-            >
-              <div className="text-center mb-10">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 300, delay: 0.3 }}
-                  className="text-6xl mb-5"
-                >
-                  🫠
-                </motion.div>
-                <h1 className="text-3xl sm:text-4xl font-[var(--font-heading)] font-bold text-text-primary mb-3">
-                  Hoş Geldin, <span className="text-gradient-gold">Gariban</span>
-                </h1>
-                <p className="text-text-secondary text-sm">Macerana başlamak için adını gir</p>
-              </div>
-
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="glass-strong rounded-2xl p-1 border border-dirty-gold/10 focus-within:border-dirty-gold/40 transition-colors shadow-[0_0_20px_rgba(196,163,90,0.05)]"
+                  transition={{ delay: 0.2 }}
+                  className="glass-strong rounded-3xl p-2 border-2 border-dirty-gold/20 focus-within:border-dirty-gold transition-colors shadow-[0_0_40px_rgba(196,163,90,0.1)]"
                 >
-                  <input
-                    type="text"
-                    placeholder="Gariban adını gir..."
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-                    className="w-full bg-transparent px-5 py-4 text-text-primary placeholder-text-muted outline-none text-lg font-medium"
-                    maxLength={20}
-                  />
+                  <div className="flex items-center gap-3 px-4 py-2">
+                    <User className="text-dirty-gold" size={24} />
+                    <input
+                      type="text"
+                      placeholder="Ör: Sefil Bilo, Çaycı Rüstem..."
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                      className="w-full bg-transparent py-3 text-text-primary placeholder-text-muted outline-none text-xl font-bold"
+                      maxLength={20}
+                      autoFocus
+                    />
+                  </div>
                 </motion.div>
 
                 <motion.button
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  whileHover={{ scale: 1.02, boxShadow: '0 0 30px rgba(196, 163, 90, 0.3)' }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={{ scale: 1.03, boxShadow: '0 0 40px rgba(196, 163, 90, 0.4)' }}
+                  whileTap={{ scale: 0.97 }}
                   onClick={handleLogin}
                   disabled={name.trim().length < 2}
-                  className="w-full py-4 bg-gradient-to-r from-dirty-gold via-ironic-gold to-faded-orange rounded-2xl text-bg-dark font-bold text-lg flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all glow-gold relative overflow-hidden group"
+                  className="w-full py-5 bg-gradient-to-r from-dirty-gold via-ironic-gold to-faded-orange rounded-2xl text-bg-dark font-extrabold text-lg flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all glow-gold"
                 >
-                  <span className="relative z-10 flex items-center gap-2">
-                    Devam Et <ArrowRight size={20} />
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-faded-orange via-dirty-gold to-ironic-gold opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  Sınıfını Seçmeye Git <ArrowRight size={20} />
                 </motion.button>
-
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.7 }}
-                  className="flex items-center gap-3 my-6"
-                >
-                  <div className="flex-1 h-px bg-white/10" />
-                  <span className="text-text-muted text-xs">veya</span>
-                  <div className="flex-1 h-px bg-white/10" />
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.8 }}
-                  className="grid grid-cols-3 gap-3"
-                >
-                  {[
-                    { emoji: '📱', label: 'Telefon' },
-                    { emoji: '📧', label: 'Google' },
-                    { emoji: '🍎', label: 'Apple' },
-                  ].map((item, i) => (
-                    <motion.button
-                      key={i}
-                      whileHover={{ scale: 1.05, borderColor: 'rgba(196,163,90,0.3)' }}
-                      whileTap={{ scale: 0.95 }}
-                      className="glass p-4 flex flex-col items-center gap-2 text-text-secondary hover:text-dirty-gold transition-all"
-                    >
-                      <span className="text-2xl">{item.emoji}</span>
-                      <span className="text-xs">{item.label}</span>
-                    </motion.button>
-                  ))}
-                </motion.div>
               </div>
             </motion.div>
           </motion.div>
         )}
 
-        {/* ===== VIBE SELECTION ===== */}
-        {step === 'vibe' && (
+        {/* ===== STEP 5: VIBE SELECTION (GAMIFIED CLASS PICKING) ===== */}
+        {step === 'vibe-select' && (
           <motion.div
-            key="vibe"
+            key="vibe-select"
             initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
-            className="relative z-10 flex flex-col items-center min-h-[100dvh] px-4 sm:px-6 py-8 sm:py-12"
+            className="relative z-10 flex flex-col items-center min-h-[100dvh] px-4 sm:px-6 py-12"
           >
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center mb-6 sm:mb-8"
-            >
-              <motion.div
-                initial={{ scale: 0, rotate: -180 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: 'spring', stiffness: 200 }}
-                className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-dirty-gold/20 to-bg-dark border border-dirty-gold/30 text-dirty-gold mb-4 glow-gold"
-              >
-                <Flame size={28} />
-              </motion.div>
-              <h1 className="text-2xl sm:text-3xl font-[var(--font-heading)] font-bold text-text-primary mb-2">
-                <span className="text-gradient-gold">Vibrasyonunu</span> Seç
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
+              <div className="text-xs font-mono text-dirty-gold tracking-[0.4em] uppercase mb-2">SON AŞAMA: OYUN SINIFINI SEÇ</div>
+              <h1 className="text-3xl sm:text-4xl font-[var(--font-heading)] font-bold text-text-primary mb-2">
+                Gariban <span className="text-gradient-gold">Vibrasyonunu Seç</span>
               </h1>
-              <p className="text-text-secondary text-sm">Duygusal kimliğini en iyi hangisi tanımlıyor?</p>
+              <p className="text-text-secondary text-sm">Savaşa hangi dert sınıfıyla (class) katılacaksın?</p>
             </motion.div>
 
-            <div className="w-full max-w-lg grid grid-cols-2 gap-2.5 sm:gap-3 pb-24">
+            <div className="w-full max-w-lg grid grid-cols-2 gap-3 sm:gap-4 pb-24">
               {vibes.map((vibe, i) => (
                 <motion.button
                   key={vibe.id}
@@ -339,26 +365,21 @@ export default function OnboardingPage() {
                   whileHover={{ scale: 1.03, y: -4 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={() => handleVibeSelect(vibe.id)}
-                  className={`relative overflow-hidden p-4 sm:p-5 text-left transition-all duration-300 rounded-2xl border ${
+                  className={`relative overflow-hidden p-5 text-left transition-all duration-300 rounded-3xl border ${
                     selectedVibe === vibe.id
                       ? 'border-2 scale-95 opacity-80'
-                      : 'border-white/5 bg-white/[0.02] hover:bg-white/[0.04]'
+                      : 'border-white/10 bg-white/[0.03] hover:bg-white/[0.06] shadow-[0_0_30px_rgba(0,0,0,0.3)]'
                   }`}
                   style={{
                     borderColor: selectedVibe === vibe.id ? vibe.color : undefined,
-                    boxShadow: selectedVibe === vibe.id ? `0 0 30px ${vibe.color}33` : undefined,
+                    boxShadow: selectedVibe === vibe.id ? `0 0 40px ${vibe.color}44` : undefined,
                   }}
                 >
-                  {/* Hover glow */}
-                  <div
-                    className="absolute inset-0 opacity-0 hover:opacity-10 transition-opacity duration-500"
-                    style={{ background: `radial-gradient(circle at center, ${vibe.color}, transparent 70%)` }}
-                  />
-
+                  <div className="absolute inset-0 opacity-0 hover:opacity-10 transition-opacity duration-500" style={{ background: `radial-gradient(circle at center, ${vibe.color}, transparent 70%)` }} />
                   <div className="relative z-10">
-                    <div className="text-2xl sm:text-3xl mb-2 sm:mb-3">{vibe.emoji}</div>
-                    <h3 className="font-bold text-text-primary text-xs sm:text-sm mb-1">{vibe.title}</h3>
-                    <p className="text-text-muted text-[10px] sm:text-xs leading-relaxed">{vibe.description}</p>
+                    <div className="text-3xl sm:text-4xl mb-3">{vibe.emoji}</div>
+                    <h3 className="font-bold text-text-primary text-sm sm:text-base mb-1">{vibe.title}</h3>
+                    <p className="text-text-muted text-xs leading-relaxed">{vibe.description}</p>
                   </div>
                 </motion.button>
               ))}
@@ -368,10 +389,10 @@ export default function OnboardingPage() {
               <motion.div
                 initial={{ opacity: 0, scale: 0.8, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                className="fixed bottom-8 left-1/2 -translate-x-1/2 glass-strong px-6 py-3 flex items-center gap-2 text-dirty-gold rounded-full shadow-[0_0_30px_rgba(196,163,90,0.2)] z-30"
+                className="fixed bottom-8 left-1/2 -translate-x-1/2 glass-strong px-8 py-4 flex items-center gap-3 text-dirty-gold rounded-full shadow-[0_0_50px_rgba(196,163,90,0.4)] z-30 border border-dirty-gold/30 glow-gold animate-bounce"
               >
-                <Sparkles size={16} />
-                <span className="text-sm font-medium">Teste yönlendiriliyorsun...</span>
+                <Sparkles size={20} />
+                <span className="text-base font-bold font-[var(--font-heading)]">Garibanometre Başlatılıyor...</span>
               </motion.div>
             )}
           </motion.div>
