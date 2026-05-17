@@ -1,11 +1,11 @@
 'use client';
 
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { vibes } from '@/data/questions';
 import { saveUser } from '@/utils/storage';
-import { ArrowRight, Sparkles, Flame, RotateCw, Trophy, Check, X, User, Zap, ShieldAlert, Star } from 'lucide-react';
+import { ArrowRight, Sparkles, Flame, Trophy, Check, X, User, Zap, Star } from 'lucide-react';
 import RainEffect from '@/components/RainEffect';
 
 type Step = 'oracle' | 'swipe' | 'streak' | 'name' | 'vibe';
